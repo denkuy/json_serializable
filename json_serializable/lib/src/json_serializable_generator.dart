@@ -7,6 +7,7 @@ import 'package:build/build.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:source_gen/source_gen.dart';
 
+import 'codec_helper.dart';
 import 'decode_helper.dart';
 import 'encoder_helper.dart';
 import 'field_helpers.dart';
@@ -77,6 +78,7 @@ class JsonSerializableGenerator
   @override
   Iterable<String> generateForAnnotatedElement(
       Element element, ConstantReader annotation, BuildStep buildStep) {
+
     if (element is! ClassElement) {
       final name = element.name;
       throw InvalidGenerationSourceError('Generator cannot target `$name`.',
@@ -90,7 +92,7 @@ class JsonSerializableGenerator
   }
 }
 
-class _GeneratorHelper extends HelperCore with EncodeHelper, DecodeHelper {
+class _GeneratorHelper extends HelperCore with EncodeHelper, DecodeHelper, CodecHelper {
   final JsonSerializableGenerator _generator;
   final _addedMembers = Set<String>();
 
@@ -162,6 +164,8 @@ class _GeneratorHelper extends HelperCore with EncodeHelper, DecodeHelper {
     if (config.createToJson) {
       yield* createToJson(accessibleFieldSet);
     }
+
+    yield* createCodecs();
 
     yield* _addedMembers;
   }

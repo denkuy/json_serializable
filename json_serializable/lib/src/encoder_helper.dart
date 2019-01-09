@@ -29,10 +29,41 @@ abstract class EncodeHelper implements HelperCore {
 
     final buffer = StringBuffer();
 
+    if(element.isAbstract) {
+
+      bool elementInheritsFromCurrentElement(ClassElement e) =>
+          e.allSupertypes.any((i) => i.element == element);
+
+      var subClasses = element.library.topLevelElements
+          .whereType<ClassElement>()
+          .where(elementInheritsFromCurrentElement);
+
+      buffer.writeln('String ${prefix}GetConcreteType(${element.name} $_toJsonParamName) {');
+
+      for (var sc in subClasses) {
+        var typeKey = sc.name.substring(0, sc.nameLength - element.nameLength);
+
+        buffer.writeln('if($_toJsonParamName is ${sc.name}) return "$typeKey";');
+      }
+
+      buffer.writeln('throw Exception("Unknown subtype");\n}');
+
+      final functionName = '${prefix}ToJson${genericClassArgumentsImpl(true)}';
+      buffer.write('Map<String, dynamic> $functionName'
+          '($targetClassReference $_toJsonParamName) =>');
+
+      buffer.write('$_toJsonParamName.toJson()..addAll({"Command": ${prefix}GetConcreteType($_toJsonParamName)});');
+
+      yield buffer.toString();
+
+      return;
+    }
+
     if (config.generateToJsonFunction) {
       final functionName = '${prefix}ToJson${genericClassArgumentsImpl(true)}';
       buffer.write('Map<String, dynamic> $functionName'
           '($targetClassReference $_toJsonParamName) ');
+
     } else {
       //
       // Generate the mixin class

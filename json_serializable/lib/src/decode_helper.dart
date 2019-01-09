@@ -38,6 +38,28 @@ abstract class DecodeHelper implements HelperCore {
             ctorParam: ctorParam);
 
     _ConstructorData data;
+    if (element.isAbstract) {
+      bool elementInheritsFromCurrentElement(ClassElement e) =>
+          e.allSupertypes.any((i) => i.element == element);
+
+      var subClasses = element.library.topLevelElements
+          .whereType<ClassElement>()
+          .where(elementInheritsFromCurrentElement);
+
+      _buffer.write('switch (json["Command"] as String) {\n');
+
+      for (var sc in subClasses) {
+        var typeKey = sc.name.substring(0, sc.nameLength - element.nameLength);
+
+        _buffer
+            .write('''case "$typeKey":\nreturn ${sc.name}.fromJson(json);''');
+      }
+
+      _buffer.write('default:\nthrow Exception("Unknown subtype");\n}\n}');
+
+      return CreateFactoryResult(_buffer.toString(), <String>[].toSet());
+    }
+
     if (config.checked) {
       final classLiteral = escapeDartString(element.name);
 
